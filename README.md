@@ -5,6 +5,7 @@ Login information for SSH into Raspberry Pis
 
 user: pi
 password: raspberrypi
+default password: raspberry
 
 Contact information:
 
