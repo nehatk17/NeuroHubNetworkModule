@@ -1,13 +1,14 @@
 /*
 
-compile with g++ udpgui.cpp -o udpgui -std=c++11  `pkg-config gtkmm-3.0 --cflags --libs` -pthread -lwiringPi
+compile with g++ NeuroHubNetworkModule.cpp -o NeuroHubNetworkModule -std=c++11  `pkg-config gtkmm-3.0 --cflags --libs` -pthread -lwiringPi
 
 
 if necessary use -g after g++ in compilation and link to use with gdb.
 
 to run:
-./gui_ex
-or gdb ./gui_ex
+export XAUTHORITY=/home/pi/.Xauthority
+sudo ./NeuroHubNetworkModule
+or gdb ./NeuroHubNetworkModule
 
 */
 
@@ -67,6 +68,8 @@ int baudrate; //9600 or 115200;
 int baudint = 0;
 
 pthread_t servbegin;
+pthread_mutex_t sendcli;
+
 bool tcpbool;
 bool looprun = true;
 bool ardrun = true;
@@ -182,9 +185,11 @@ void *from_ard_udp(void *thissock)
   // usleep(400);
      ardchar = char(ardint);
      mesg = &ardchar;
-     
+ 
+ pthread_mutex_lock(&sendcli);
     send_message_all_udp(mesg, mysock); 
-     
+    pthread_mutex_unlock(&sendcli);
+    
    
     
     }
@@ -224,11 +229,15 @@ while(looprun){
     {
     //usleep(1000);
     
-    
+
+    pthread_mutex_lock(&sendcli);
     send_client_udp(client_msg,mysock,myport); //was send_message
-  
+	
+ 
+
     serialPuts (serfd, &(*client_msg)) ;
     
+    pthread_mutex_unlock(&sendcli);
     }
  
      
@@ -270,7 +279,9 @@ void *from_ard_tcp(void *)
       mesg = &ardchar;
       
 
+pthread_mutex_lock(&sendcli);
 send_message_all_tcp(mesg);
+pthread_mutex_unlock(&sendcli);
 
     
     }
@@ -311,12 +322,15 @@ void *handle_conn_tcp(void *pnewsock)
     client_msg[read_size] = '\0';
    
      /*  cout << "length of client message: " << strlen(client_msg) << endl;
-       cout << "# bytes is : " << read_size << endl;     */   
+       cout << "# bytes is : " << read_size << endl;     */ 
+	
+ pthread_mutex_lock(&sendcli);
    send_client_tcp(client_msg,mysock); //was send_message
+  
    
-    
+
      serialPuts(serfd, &(*client_msg)) ;
- 
+ pthread_mutex_unlock(&sendcli);
     
    
     }
